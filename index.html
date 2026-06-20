@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>VMM Weekly Safety Checklist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --blue:#1565C0; --blue-d:#1e3a8a; --pink:#E91E8C; --green:#4CAF50; --amber:#FF9800; --red:#F44336;
+  --bg:#F5F5F5; --card:#FFFFFF; --border:#E0E0E0; --text:#333333; --text2:#666666; --text3:#999999;
+  --r-sm:4px; --r-md:6px; --r-lg:8px;
+  --sh-md:0 4px 6px rgba(0,0,0,.07); --sh-lg:0 10px 15px rgba(0,0,0,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Roboto',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.hide{display:none!important}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;background:#fff;color:var(--text)}
+label{font-size:12px;color:var(--text2);font-weight:500;display:block;margin-bottom:5px}
+.field{margin-bottom:14px}
+
+/* ===== Buttons ===== */
+.btn{padding:11px 18px;border:none;border-radius:var(--r-sm);font-size:14px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.15s;white-space:nowrap}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-blue:hover:not(:disabled){background:#0d47a1}
+.btn-green{background:var(--green);color:#fff}
+.btn-green:hover:not(:disabled){background:#388e3c}
+.btn-amber{background:var(--amber);color:#fff}
+.btn-red{background:var(--red);color:#fff}
+.btn-outline{background:transparent;border:1.5px solid var(--blue);color:var(--blue)}
+.btn-outline:hover:not(:disabled){background:rgba(21,101,192,.08)}
+.btn-block{width:100%}
+.btn-sm{padding:6px 12px;font-size:12px}
+
+/* ===== Login ===== */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--blue),var(--blue-d));padding:20px}
+.login-box{background:#fff;border-radius:var(--r-lg);box-shadow:var(--sh-lg);max-width:380px;width:100%;overflow:hidden}
+.login-head{background:linear-gradient(135deg,var(--blue),var(--blue-d));color:#fff;padding:28px 24px 22px;text-align:center}
+.login-head h1{font-size:18px;font-weight:700;margin-bottom:4px}
+.login-head p{font-size:12px;opacity:.85}
+.login-body{padding:24px}
+.role-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:18px}
+.role-card{border:1.5px solid var(--border);border-radius:var(--r-md);padding:14px 6px;text-align:center;background:#fff}
+.role-card.active{border-color:var(--blue);background:rgba(21,101,192,.06)}
+.role-card .ic{font-size:22px;margin-bottom:4px}
+.role-card .lb{font-size:11px;font-weight:600;color:var(--text2)}
+.role-card.active .lb{color:var(--blue)}
+.foot-credit{text-align:center;font-size:10px;color:var(--text3);margin-top:14px}
+
+/* ===== Header / shell ===== */
+.app-header{background:linear-gradient(135deg,var(--blue),var(--blue-d));color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--sh-md)}
+.app-header h2{font-size:16px;font-weight:700}
+.app-header .sub{font-size:11px;opacity:.85;margin-top:1px}
+.icon-btn{background:rgba(255,255,255,.18);border:none;color:#fff;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}
+.main{max-width:560px;margin:0 auto;padding:16px;padding-bottom:60px}
+.main.wide{max-width:1200px}
+
+/* ===== Cards ===== */
+.card{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--sh-md);margin-bottom:14px;overflow:hidden}
+.card-head{background:linear-gradient(135deg,var(--blue),var(--blue-d));color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.card-head h3{font-size:14px;font-weight:700}
+.card-body{padding:16px}
+.card.is-pending{border-left:4px solid var(--amber)}
+.card.is-submitted{border-left:4px solid var(--green)}
+.card.is-nc{border-left:4px solid var(--pink)}
+
+/* ===== Popup modal ===== */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:var(--r-lg);max-width:380px;width:100%;overflow:hidden;box-shadow:var(--sh-lg)}
+.modal-h{padding:18px 20px 6px;text-align:center}
+.modal-h .ic{font-size:36px;margin-bottom:8px}
+.modal-h h3{font-size:16px;font-weight:700}
+.modal-h p{font-size:13px;color:var(--text2);margin-top:6px}
+.modal-f{padding:16px 20px 20px;display:flex;gap:10px}
+.modal-f .btn{flex:1}
+
+/* ===== Toast ===== */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#222;color:#fff;padding:11px 20px;border-radius:24px;font-size:13px;z-index:1000;transition:.25s;opacity:0;max-width:90%;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#toast.success{background:#2e7d32}
+#toast.error{background:#c62828}
+#toast.info{background:#1565C0}
+
+/* ===== Question card ===== */
+.q-card{border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:12px}
+.q-card .q-no{font-size:11px;color:var(--blue);font-weight:700}
+.q-card .q-text{font-size:14px;font-weight:500;margin:4px 0 10px}
+.toggle2{display:flex;gap:8px;margin-bottom:8px}
+.toggle2 button{flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:#fff;font-size:13px;font-weight:600;color:var(--text2)}
+.toggle2 button.sel-c{background:var(--green);border-color:var(--green);color:#fff}
+.toggle2 button.sel-nc{background:var(--red);border-color:var(--red);color:#fff}
+.cam-box{margin-top:8px}
+.cam-thumb{width:100%;max-height:180px;object-fit:cover;border-radius:var(--r-sm);margin-top:6px;border:1px solid var(--border)}
+.req-tag{display:inline-block;background:var(--pink);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
+
+/* ===== KPI grid ===== */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:#fff;border-radius:var(--r-md);padding:14px 10px;text-align:center;box-shadow:var(--sh-md)}
+.kpi .v{font-size:22px;font-weight:700;color:var(--blue)}
+.kpi .l{font-size:10px;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:.3px}
+@media(max-width:600px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* ===== Badges ===== */
+.badge{display:inline-block;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:700}
+.b-green{background:#E8F5E9;color:#2e7d32}
+.b-amber{background:#FFF3E0;color:#e65100}
+.b-red{background:#FFEBEE;color:#c62828}
+.b-grey{background:#F0F0F0;color:#777}
+
+/* ===== Tables ===== */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:#FAFAFA;font-weight:700;color:var(--text2);font-size:11px;text-transform:uppercase}
+tr:hover td{background:#FAFBFF}
+.tbl-wrap{overflow-x:auto}
+
+/* ===== Admin shell ===== */
+.admin-shell{display:flex;min-height:100vh}
+.admin-side{width:200px;background:linear-gradient(180deg,var(--blue-d),var(--blue));flex-shrink:0;padding:16px 0;position:sticky;top:0;height:100vh}
+.admin-side .nav-i{padding:11px 20px;color:rgba(255,255,255,.8);font-size:13px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.admin-side .nav-i.active{background:var(--pink);color:#fff;font-weight:700}
+.admin-side .nav-i:hover:not(.active){background:rgba(255,255,255,.1)}
+.admin-main{flex:1;background:var(--bg);min-width:0}
+.admin-top{background:#fff;padding:14px 22px;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--sh-md);position:sticky;top:0;z-index:20}
+.admin-page{padding:20px 22px;display:none}
+.admin-page.active{display:block}
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.filter-bar select,.filter-bar input{width:auto;min-width:140px}
+@media(max-width:800px){.admin-side{display:none}}
+
+/* ===== Photo viewer ===== */
+.photo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:1100;display:flex;align-items:center;justify-content:center}
+.photo-overlay img{max-width:92%;max-height:92%;border-radius:6px}
+.photo-overlay .close-x{position:absolute;top:18px;right:18px;color:#fff;font-size:26px;background:none;border:none}
+
+/* ===== History collapse ===== */
+.hist-item{border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:8px;overflow:hidden}
+.hist-h{padding:11px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;background:#FAFAFA}
+.hist-b{padding:0 14px 14px;display:none}
+.hist-item.open .hist-b{display:block}
+.hist-item.open .chev{transform:rotate(180deg)}
+.chev{transition:.2s;color:var(--text3)}
+
+.footer-credit{text-align:center;font-size:11px;color:var(--text3);padding:18px 0}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-head">
+      <img class="vmm-logo" id="loginLogo" style="height:38px;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto" alt="VMM">
+      <h1>🦺 Weekly Safety Checklist</h1>
+      <p>Vishal Mega Mart Ltd. — Central Operations</p>
+    </div>
+    <div class="login-body">
+      <div class="role-grid" id="roleGrid">
+        <div class="role-card active" data-role="store"><div class="ic">🏬</div><div class="lb">Store</div></div>
+        <div class="role-card" data-role="am"><div class="ic">👤</div><div class="lb">AM</div></div>
+        <div class="role-card" data-role="admin"><div class="ic">🔑</div><div class="lb">Admin</div></div>
+      </div>
+
+      <div id="loginFieldsStore">
+        <div class="field"><label>Store Code</label><input id="inStoreCode" placeholder="e.g. HH02" style="text-transform:uppercase"></div>
+      </div>
+      <div id="loginFieldsAM" class="hide">
+        <div class="field"><label>AM Employee Code</label><input id="inAMCode" placeholder="E-Code"></div>
+      </div>
+      <div id="loginFieldsAdmin" class="hide">
+        <div class="field"><label>Admin Employee Code</label><input id="inAdminCode" placeholder="E-Code"></div>
+        <div class="field"><label>Password</label><input id="inAdminPwd" type="password" placeholder="Password"></div>
+      </div>
+
+      <button class="btn btn-blue btn-block" id="btnLogin" style="margin-top:6px">Continue →</button>
+      <div class="foot-credit">Designed &amp; Developed by Shubhendu Sinha | Vishal Mega Mart Ltd.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STORE FOUND POPUP ============ -->
+<div class="modal-bg hide" id="storeFoundModal">
+  <div class="modal">
+    <div class="modal-h"><div class="ic">📍</div><h3 id="sfStoreName">—</h3><p id="sfStoreDist">Within range — press OK to proceed</p></div>
+    <div class="modal-f">
+      <button class="btn btn-outline" id="sfCancel">Cancel</button>
+      <button class="btn btn-blue" id="sfOk">OK, Proceed</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ALREADY SUBMITTED MODAL ============ -->
+<div class="modal-bg hide" id="alreadyModal">
+  <div class="modal">
+    <div class="modal-h"><div class="ic">✅</div><h3>Already Submitted</h3><p>This store's checklist for this week is already filed.<br><b id="alreadyIssueNo"></b></p></div>
+    <div class="modal-f">
+      <button class="btn btn-blue btn-block" id="alreadyClose">View Submission</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PHOTO VIEWER ============ -->
+<div class="photo-overlay hide" id="photoOverlay">
+  <button class="close-x" id="photoClose">✕</button>
+  <img id="photoOverlayImg" src="">
+</div>
+
+<!-- ============ STORE APP ============ -->
+<div id="storeApp" class="hide">
+  <div class="app-header">
+    <div><h2 id="storeAppTitle">Weekly Safety Checklist</h2><div class="sub" id="storeAppSub">—</div></div>
+    <button class="icon-btn" id="storeLogout">⎋</button>
+  </div>
+  <div class="main" id="storeMain"></div>
+</div>
+
+<!-- ============ AM APP (view-only) ============ -->
+<div id="amApp" class="hide">
+  <div class="app-header">
+    <div><h2>My Stores — Weekly Safety</h2><div class="sub" id="amSub">—</div></div>
+    <button class="icon-btn" id="amLogout">⎋</button>
+  </div>
+  <div class="main" id="amMain"></div>
+</div>
+
+<!-- ============ ADMIN APP ============ -->
+<div id="adminApp" class="hide">
+  <div class="admin-shell">
+    <div class="admin-side">
+      <div style="color:#fff;font-weight:700;font-size:14px;padding:6px 20px 18px;display:flex;align-items:center;gap:8px"><img class="vmm-logo" id="adminLogo" style="height:24px" alt="VMM"> WSC Admin</div>
+      <div class="nav-i active" data-page="dash">📊&nbsp; Dashboard</div>
+      <div class="nav-i" data-page="log">🗂️&nbsp; Submissions Log</div>
+      <div class="nav-i" data-page="stores">🏬&nbsp; Store Master</div>
+      <div class="nav-i" data-page="questions">📋&nbsp; Questions</div>
+      <div class="nav-i" data-page="export">📤&nbsp; Export</div>
+      <div class="nav-i" data-page="settings">⚙️&nbsp; Settings</div>
+    </div>
+    <div class="admin-main">
+      <div class="admin-top">
+        <div style="font-weight:700;font-size:15px" id="adminTopTitle">Dashboard</div>
+        <button class="icon-btn" id="adminLogout" style="background:#eee;color:#333">⎋</button>
+      </div>
+
+      <div class="admin-page active" id="page-dash">
+        <div class="kpi-grid">
+          <div class="kpi"><div class="v" id="kpiTotal">0</div><div class="l">Total Stores</div></div>
+          <div class="kpi"><div class="v" id="kpiSub">0</div><div class="l">Submitted</div></div>
+          <div class="kpi"><div class="v" id="kpiPend">0</div><div class="l">Pending</div></div>
+          <div class="kpi"><div class="v" id="kpiComp">0%</div><div class="l">Compliance</div></div>
+        </div>
+        <div class="filter-bar">
+          <select id="dashWeekSel"></select>
+          <select id="dashZfmSel"><option value="">All ZFM</option></select>
+          <select id="dashAmSel"><option value="">All AM</option></select>
+        </div>
+        <div class="card"><div class="card-head"><h3>Question-wise Compliance</h3></div><div class="card-body"><canvas id="qChart" height="90"></canvas></div></div>
+        <div class="card"><div class="card-head"><h3>Store Status</h3></div><div class="card-body tbl-wrap"><table id="dashStoreTbl"><thead><tr><th>Store</th><th>ZFM</th><th>AM</th><th>Status</th><th>Issue No.</th></tr></thead><tbody></tbody></table></div></div>
+      </div>
+
+      <div class="admin-page" id="page-log">
+        <div class="filter-bar">
+          <input type="week" id="logWeekPick">
+          <input id="logSearch" placeholder="Search store code/name...">
+        </div>
+        <div class="card"><div class="card-body tbl-wrap"><table id="logTbl"><thead><tr><th>Store</th><th>Issue No.</th><th>Submitted By</th><th>Submitted At</th><th>NC Count</th><th></th></tr></thead><tbody></tbody></table></div></div>
+      </div>
+
+      <div class="admin-page" id="page-stores">
+        <div class="filter-bar">
+          <button class="btn btn-blue btn-sm" id="btnAddStore">+ Add Store</button>
+          <button class="btn btn-outline btn-sm" id="btnImportCsv">⬆ Import CSV</button>
+          <button class="btn btn-outline btn-sm" id="btnExportStoresCsv">⬇ Export CSV</button>
+          <input type="file" id="csvFileInput" accept=".csv" class="hide">
+          <input id="storeSearch" placeholder="Search...">
+        </div>
+        <div class="card"><div class="card-body tbl-wrap"><table id="storeTbl"><thead><tr><th>Code</th><th>Name</th><th>SM Email</th><th>AM Code</th><th>AM Email</th><th>ZFM Email</th><th>Active</th><th></th></tr></thead><tbody></tbody></table></div></div>
+      </div>
+
+      <div class="admin-page" id="page-questions">
+        <div class="filter-bar"><button class="btn btn-blue btn-sm" id="btnAddQ">+ Add Question</button></div>
+        <div class="card"><div class="card-body tbl-wrap"><table id="qTbl"><thead><tr><th>#</th><th>Question</th><th>Photo Req.</th><th>Active</th><th></th></tr></thead><tbody></tbody></table></div></div>
+      </div>
+
+      <div class="admin-page" id="page-export">
+        <div class="card"><div class="card-head"><h3>Export Data</h3></div><div class="card-body">
+          <div class="field"><label>Week</label><input type="week" id="exportWeekPick"></div>
+          <button class="btn btn-green" id="btnExportXlsx">⬇ Download Excel (.xlsx)</button>
+          <button class="btn btn-outline" id="btnExportCsvLog" style="margin-left:8px">⬇ Download CSV</button>
+        </div></div>
+      </div>
+
+      <div class="admin-page" id="page-settings">
+        <div class="card"><div class="card-head"><h3>Settings</h3></div><div class="card-body">
+          <div class="field" style="display:flex;align-items:center;gap:10px">
+            <input type="checkbox" id="testModeToggle" style="width:auto"><label style="margin:0">Test Mode (bypass GPS + week-lock, prefix TEST-, excluded from compliance)</label>
+          </div>
+          <div class="field"><label>GPS Radius (meters)</label><input type="number" id="gpsRadiusInput" value="200"></div>
+          <button class="btn btn-blue" id="btnSaveSettings">Save Settings</button>
+        </div></div>
+      </div>
+
+      <div class="footer-credit">Designed &amp; Developed by Shubhendu Sinha | Vishal Mega Mart Ltd.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Store Modal -->
+<div class="modal-bg hide" id="storeFormModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-h" style="text-align:left"><h3 id="storeFormTitle">Add Store</h3></div>
+    <div style="padding:0 20px 6px">
+      <div class="field"><label>Store Code</label><input id="sfCode"></div>
+      <div class="field"><label>Store Name</label><input id="sfName"></div>
+      <div class="field"><label>Latitude</label><input id="sfLat" type="number" step="any"></div>
+      <div class="field"><label>Longitude</label><input id="sfLng" type="number" step="any"></div>
+      <div class="field"><label>SM Email</label><input id="sfSmEmail"></div>
+      <div class="field"><label>AM Code</label><input id="sfAmCode"></div>
+      <div class="field"><label>AM Email</label><input id="sfAmEmail"></div>
+      <div class="field"><label>ZFM Email</label><input id="sfZfmEmail"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-outline" id="sfFormCancel">Cancel</button>
+      <button class="btn btn-blue" id="sfFormSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Question Modal -->
+<div class="modal-bg hide" id="qFormModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-h" style="text-align:left"><h3>Question</h3></div>
+    <div style="padding:0 20px 6px">
+      <div class="field"><label>Question Text</label><textarea id="qfText" rows="3"></textarea></div>
+      <div class="field" style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="qfPhotoReq" style="width:auto"><label style="margin:0">Photo Required</label></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-outline" id="qfCancel">Cancel</button>
+      <button class="btn btn-blue" id="qfSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Camera Capture Modal -->
+<div class="modal-bg hide" id="camModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-h" style="text-align:left;padding-bottom:0"><h3>Take Photo</h3></div>
+    <div style="padding:10px 20px">
+      <video id="camVideo" autoplay playsinline style="width:100%;border-radius:6px;background:#000"></video>
+      <canvas id="camCanvas" class="hide"></canvas>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-outline" id="camCancel">Cancel</button>
+      <button class="btn btn-blue" id="camShoot">📸 Capture</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   FIREBASE CONFIG — project: vmm-weekly-safety (dedicated project)
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDjYczhk0cuqWr85Qfpsyu26tThHLaF3_0",
+  authDomain: "vmm-weekly-safety.firebaseapp.com",
+  projectId: "vmm-weekly-safety",
+  storageBucket: "vmm-weekly-safety.firebasestorage.app",
+  messagingSenderId: "585463102948",
+  appId: "1:585463102948:web:ce871d936e1802b2d8dbf1"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+try{ db.settings({experimentalForceLongPolling:true, experimentalAutoDetectLongPolling:true}); }catch(e){}
+
+const LOGO = "data:image/png;base64,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";
+function paintLogos(){ document.querySelectorAll(".vmm-logo").forEach(el=>el.src=LOGO); }
+window.addEventListener("DOMContentLoaded", paintLogos);
+paintLogos();
+const ADMIN_CODES = {"6020922":{name:"Shubhendu Sinha",pwd:"811992"},"6027250":{name:"Aishveriya Arora",pwd:"080482"}};
+const COL_STORES = "wsc_stores", COL_Q = "wsc_questions", COL_SUB = "wsc_submissions", COL_CFG = "wsc_config";
+
+/* ============================================================
+   UTIL
+   ============================================================ */
+function toast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='show '+(type||'');
+  clearTimeout(window._tT);
+  window._tT=setTimeout(()=>{t.className='';},2600);
+}
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371000, toR=x=>x*Math.PI/180;
+  const dLat=toR(lat2-lat1), dLon=toR(lon2-lon1);
+  const a=Math.sin(dLat/2)**2 + Math.cos(toR(lat1))*Math.cos(toR(lat2))*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function getMonday(d){
+  d=d?new Date(d):new Date();
+  const day=d.getDay(); const diff=(day===0?-6:1-day);
+  const m=new Date(d); m.setDate(d.getDate()+diff); m.setHours(0,0,0,0);
+  return m;
+}
+function fmtDate(d){
+  const dt=new Date(d);
+  return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+}
+function weekKey(d){
+  const m=getMonday(d);
+  return m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0')+'-'+String(m.getDate()).padStart(2,'0');
+}
+function weekInputToKey(weekInputVal){
+  // weekInputVal format: "2026-W25"
+  if(!weekInputVal) return weekKey();
+  const [y,w]=weekInputVal.split('-W');
+  const simple=new Date(parseInt(y),0,1+(parseInt(w)-1)*7);
+  return weekKey(simple);
+}
+function getGeo(){
+  return new Promise((res,rej)=>{
+    if(!navigator.geolocation){ rej(new Error('GPS not available on this device')); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos=>res({lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy}),
+      err=>rej(err),
+      {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+    );
+  });
+}
+function uid(){ return Math.random().toString(36).slice(2,9); }
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const ST = {
+  role:null, store:null, am:null, admin:null,
+  stores:[], questions:[], cfg:{testMode:false,gpsRadius:200},
+  currentWeek:weekKey(), pendingGeo:null, pendingStore:null,
+  answers:{}, photos:{}, camTargetQ:null, camStream:null,
+  qChart:null, adminCache:{submissionsByWeek:{}}
+};
+
+/* ============================================================
+   FIRESTORE LOADERS
+   ============================================================ */
+async function loadStores(){
+  const snap = await db.collection(COL_STORES).get();
+  ST.stores = snap.docs.map(d=>({id:d.id,...d.data()}));
+  return ST.stores;
+}
+async function loadQuestions(){
+  const snap = await db.collection(COL_Q).orderBy('order','asc').get();
+  ST.questions = snap.docs.map(d=>({id:d.id,...d.data()}));
+  if(!ST.questions.length){
+    // seed defaults once
+    const defs=[
+      {text:"Are emergency lights operational and tested?",requirePhoto:false},
+      {text:"Are fire extinguishers in place, accessible and working?",requirePhoto:false},
+      {text:"Are fire extinguisher maintenance records up to date?",requirePhoto:false},
+      {text:"Is fire exit signage clearly visible and illuminated?",requirePhoto:false},
+      {text:"Are emergency contact posters displayed at all cash tills and back office?",requirePhoto:true},
+      {text:"Are emergency contacts displayed inside all lifts / elevators?",requirePhoto:true},
+      {text:"Are lift opening / emergency tools available and accessible?",requirePhoto:false},
+      {text:"Is the first aid kit complete, stocked and accessible to staff?",requirePhoto:false},
+      {text:"Are fire tank water levels full and daily readings recorded?",requirePhoto:false}
+    ];
+    const batch=db.batch();
+    defs.forEach((q,i)=>{
+      const ref=db.collection(COL_Q).doc();
+      batch.set(ref,{...q,order:i,active:true});
+    });
+    await batch.commit();
+    return loadQuestions();
+  }
+  return ST.questions;
+}
+async function loadConfig(){
+  const doc = await db.collection(COL_CFG).doc('main').get();
+  if(doc.exists) ST.cfg = {testMode:false,gpsRadius:200,...doc.data()};
+}
+async function saveConfig(){
+  await db.collection(COL_CFG).doc('main').set(ST.cfg);
+}
+async function getSubmission(weekK,storeCode){
+  const doc = await db.collection(COL_SUB).doc(weekK).collection('stores').doc(storeCode).get();
+  return doc.exists ? doc.data() : null;
+}
+async function getWeekSubmissions(weekK){
+  const snap = await db.collection(COL_SUB).doc(weekK).collection('stores').get();
+  return snap.docs.map(d=>d.data());
+}
+async function nextIssueSeq(weekK,storeCode){
+  // Issue no: WSC-YYYYMMDD-STORECODE-0001 (sequence per store reset is always 0001 since one per week)
+  return 1;
+}
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+document.querySelectorAll('#roleGrid .role-card').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#roleGrid .role-card').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active');
+    const r=c.dataset.role;
+    document.getElementById('loginFieldsStore').classList.toggle('hide',r!=='store');
+    document.getElementById('loginFieldsAM').classList.toggle('hide',r!=='am');
+    document.getElementById('loginFieldsAdmin').classList.toggle('hide',r!=='admin');
+  });
+});
+
+document.getElementById('btnLogin').addEventListener('click', async ()=>{
+  const role = document.querySelector('#roleGrid .role-card.active').dataset.role;
+  await loadConfig();
+  if(role==='store'){
+    const code = document.getElementById('inStoreCode').value.trim().toUpperCase();
+    if(!code){ toast('Enter store code','error'); return; }
+    await loadStores();
+    const store = ST.stores.find(s=>s.code===code && s.active!==false);
+    if(!store){ toast('Store code not found or inactive','error'); return; }
+    ST.store = store;
+    await loadQuestions();
+    startStoreFlow();
+  } else if(role==='am'){
+    const code = document.getElementById('inAMCode').value.trim();
+    if(!code){ toast('Enter AM code','error'); return; }
+    await loadStores();
+    const mine = ST.stores.filter(s=>s.amCode===code);
+    if(!mine.length){ toast('No stores mapped to this AM code','error'); return; }
+    ST.am = {code, stores:mine};
+    await loadQuestions();
+    startAMFlow();
+  } else {
+    const code = document.getElementById('inAdminCode').value.trim();
+    const pwd = document.getElementById('inAdminPwd').value;
+    const rec = ADMIN_CODES[code];
+    if(!rec || rec.pwd!==pwd){ toast('Invalid admin credentials','error'); return; }
+    ST.admin = {code, name:rec.name};
+    await loadStores(); await loadQuestions();
+    startAdminFlow();
+  }
+});
+
+/* ============================================================
+   STORE FLOW
+   ============================================================ */
+async function startStoreFlow(){
+  document.getElementById('loginScreen').classList.add('hide');
+  document.getElementById('storeApp').classList.remove('hide');
+  document.getElementById('storeAppSub').textContent = ST.store.name+' ('+ST.store.code+')';
+  document.getElementById('storeLogout').onclick=()=>location.reload();
+
+  const wk = ST.currentWeek;
+  const existing = await getSubmission(wk, ST.store.code);
+  if(existing && !ST.cfg.testMode){
+    document.getElementById('alreadyIssueNo').textContent = existing.issueNo;
+    document.getElementById('alreadyModal').classList.remove('hide');
+    document.getElementById('alreadyClose').onclick = ()=>{
+      document.getElementById('alreadyModal').classList.add('hide');
+      renderStoreReadOnly(existing);
+    };
+    return;
+  }
+
+  if(ST.cfg.testMode){
+    renderStoreChecklist();
+    return;
+  }
+
+  // GPS gate
+  renderGpsWaiting();
+  try{
+    const geo = await getGeo();
+    const eff = (ST.cfg.gpsRadius||200) + (geo.acc||0);
+    const dist = haversine(geo.lat,geo.lng,ST.store.lat,ST.store.lng);
+    ST.pendingGeo = geo;
+    if(dist <= eff){
+      document.getElementById('sfStoreName').textContent = '📍 '+ST.store.name+' found';
+      document.getElementById('sfStoreDist').textContent = 'Distance: '+Math.round(dist)+'m — press OK to proceed';
+      document.getElementById('storeFoundModal').classList.remove('hide');
+      document.getElementById('sfOk').onclick=()=>{
+        document.getElementById('storeFoundModal').classList.add('hide');
+        renderStoreChecklist();
+      };
+      document.getElementById('sfCancel').onclick=()=>location.reload();
+    } else {
+      renderGpsFail('You are '+Math.round(dist)+'m from '+ST.store.name+'. Please ensure you are at the store premises (within '+(ST.cfg.gpsRadius||200)+'m).');
+    }
+  }catch(err){
+    renderGpsFail(err.code===1 ? 'Location permission denied. Enable Location Services and retry.' : 'Unable to get GPS. Ensure you are at the store and GPS is on.');
+  }
+}
+
+function renderGpsWaiting(){
+  document.getElementById('storeMain').innerHTML = `
+    <div class="card"><div class="card-body" style="text-align:center;padding:40px 16px">
+      <div style="font-size:32px">📡</div>
+      <p style="margin-top:10px;color:var(--text2)">Fetching your location...</p>
+    </div></div>`;
+}
+function renderGpsFail(msg){
+  document.getElementById('storeMain').innerHTML = `
+    <div class="card"><div class="card-body" style="text-align:center;padding:30px 16px">
+      <div style="font-size:32px">📍</div>
+      <p style="margin-top:10px;color:var(--red);font-weight:500">${msg}</p>
+      <button class="btn btn-blue" style="margin-top:14px" onclick="location.reload()">Retry</button>
+    </div></div>`;
+}
+
+function renderStoreChecklist(){
+  ST.answers = {}; ST.photos = {};
+  let html = `<div class="card"><div class="card-head"><h3>Weekly Safety Checklist — Week of ${fmtDate(ST.currentWeek)}</h3></div><div class="card-body">`;
+  ST.questions.filter(q=>q.active!==false).forEach((q,i)=>{
+    html += `
+    <div class="q-card" data-qid="${q.id}">
+      <div class="q-no">Q${i+1}</div>
+      <div class="q-text">${q.text}${q.requirePhoto?'<span class="req-tag">📷 Photo Required</span>':''}</div>
+      <div class="toggle2">
+        <button class="btn-comp" data-v="C" onclick="setAns('${q.id}','C',this)">✓ Compliant</button>
+        <button class="btn-comp" data-v="NC" onclick="setAns('${q.id}','NC',this)">✕ Non-Compliant</button>
+      </div>
+      <div class="field" id="remarksWrap-${q.id}" style="display:none">
+        <label>Remarks (required)</label>
+        <textarea rows="2" id="remarks-${q.id}" onchange="setRemarks('${q.id}',this.value)"></textarea>
+      </div>
+      ${q.requirePhoto?`
+      <div class="cam-box">
+        <button class="btn btn-outline btn-sm" onclick="openCamera('${q.id}')">📷 Take Photo</button>
+        <img class="cam-thumb hide" id="thumb-${q.id}">
+      </div>`:''}
+    </div>`;
+  });
+  html += `</div></div>
+  <button class="btn btn-blue btn-block" id="btnReview" onclick="goReview()">Review &amp; Submit →</button>
+  <div class="footer-credit">Designed &amp; Developed by Shubhendu Sinha | Vishal Mega Mart Ltd.</div>`;
+  document.getElementById('storeMain').innerHTML = html;
+}
+
+window.setAns = function(qid,val,btn){
+  ST.answers[qid] = ST.answers[qid]||{};
+  ST.answers[qid].status = val;
+  const wrap = btn.closest('.q-card');
+  wrap.querySelectorAll('.btn-comp').forEach(b=>b.classList.remove('sel-c','sel-nc'));
+  btn.classList.add(val==='C'?'sel-c':'sel-nc');
+  document.getElementById('remarksWrap-'+qid).style.display = (val==='NC') ? 'block' : 'none';
+};
+window.setRemarks = function(qid,val){
+  ST.answers[qid] = ST.answers[qid]||{};
+  ST.answers[qid].remarks = val;
+};
+
+window.openCamera = function(qid){
+  ST.camTargetQ = qid;
+  document.getElementById('camModal').classList.remove('hide');
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(stream=>{
+    ST.camStream = stream;
+    document.getElementById('camVideo').srcObject = stream;
+  }).catch(()=>{ toast('Camera access denied','error'); document.getElementById('camModal').classList.add('hide'); });
+};
+document.getElementById('camCancel').onclick = closeCam;
+function closeCam(){
+  if(ST.camStream){ ST.camStream.getTracks().forEach(t=>t.stop()); ST.camStream=null; }
+  document.getElementById('camModal').classList.add('hide');
+}
+document.getElementById('camShoot').onclick = async ()=>{
+  const video = document.getElementById('camVideo');
+  const canvas = document.getElementById('camCanvas');
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+
+  // Geo + timestamp watermark
+  const geo = ST.pendingGeo || {lat:ST.store.lat,lng:ST.store.lng};
+  const ts = new Date().toLocaleString('en-IN');
+  const wmH = 46;
+  ctx.fillStyle='rgba(0,0,0,.55)';
+  ctx.fillRect(0,canvas.height-wmH,canvas.width,wmH);
+  ctx.fillStyle='#fff'; ctx.font='13px Arial';
+  ctx.fillText(`📍 ${ST.store.name} (${ST.store.code})`,10,canvas.height-26);
+  ctx.fillText(`${geo.lat.toFixed(5)}, ${geo.lng.toFixed(5)}  |  ${ts}`,10,canvas.height-8);
+
+  let quality=90, dataUrl;
+  do{
+    dataUrl = canvas.toDataURL('image/jpeg', quality/100);
+    quality-=10;
+  } while(dataUrl.length>100000 && quality>30);
+
+  ST.photos[ST.camTargetQ] = dataUrl;
+  const thumb = document.getElementById('thumb-'+ST.camTargetQ);
+  thumb.src = dataUrl; thumb.classList.remove('hide');
+  toast('Photo captured ('+(dataUrl.length/1024).toFixed(0)+' KB)','success');
+  closeCam();
+};
+
+window.goReview = function(){
+  const q = ST.questions.filter(qq=>qq.active!==false);
+  for(const qq of q){
+    const a = ST.answers[qq.id];
+    if(!a || !a.status){ toast('Please answer: '+qq.text.slice(0,40)+'...','error'); return; }
+    if(a.status==='NC' && !(a.remarks||'').trim()){ toast('Remarks required for Non-Compliant item','error'); return; }
+    if(qq.requirePhoto && !ST.photos[qq.id]){ toast('Photo required for: '+qq.text.slice(0,40)+'...','error'); return; }
+  }
+  renderStoreReview();
+};
+
+function renderStoreReview(){
+  const q = ST.questions.filter(qq=>qq.active!==false);
+  let html = `<div class="card"><div class="card-head"><h3>Review Before Submit</h3></div><div class="card-body">`;
+  q.forEach((qq,i)=>{
+    const a = ST.answers[qq.id];
+    html += `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:12px;color:var(--text2)">Q${i+1}. ${qq.text}</div>
+      <div style="margin-top:3px"><span class="badge ${a.status==='C'?'b-green':'b-red'}">${a.status==='C'?'Compliant':'Non-Compliant'}</span></div>
+      ${a.remarks?`<div style="font-size:12px;margin-top:4px;color:var(--text)">📝 ${a.remarks}</div>`:''}
+      ${ST.photos[qq.id]?`<img src="${ST.photos[qq.id]}" style="width:100%;max-height:140px;object-fit:cover;border-radius:6px;margin-top:6px">`:''}
+    </div>`;
+  });
+  html += `</div></div>
+  <div style="display:flex;gap:10px">
+    <button class="btn btn-outline btn-block" onclick="renderStoreChecklist()">← Back &amp; Edit</button>
+    <button class="btn btn-green btn-block" id="btnFinalSubmit" onclick="submitChecklist()">✅ Submit</button>
+  </div>
+  <div class="footer-credit">Designed &amp; Developed by Shubhendu Sinha | Vishal Mega Mart Ltd.</div>`;
+  document.getElementById('storeMain').innerHTML = html;
+}
+
+window.submitChecklist = async function(){
+  const btn = document.getElementById('btnFinalSubmit');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+  try{
+    const wk = ST.currentWeek;
+    const dateStr = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const issueNo = (ST.cfg.testMode?'TEST-':'') + 'WSC-'+dateStr+'-'+ST.store.code+'-0001';
+    const answersArr = ST.questions.filter(q=>q.active!==false).map(q=>({
+      qid:q.id, text:q.text, status:ST.answers[q.id].status,
+      remarks:ST.answers[q.id].remarks||'', photoBase64: ST.photos[q.id]||null
+    }));
+    const payload = {
+      storeCode: ST.store.code, storeName: ST.store.name,
+      amCode: ST.store.amCode||'', amEmail: ST.store.amEmail||'', zfmEmail: ST.store.zfmEmail||'',
+      answers: answersArr, issueNo,
+      submittedBy: 'Store', submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      gps: ST.pendingGeo ? `${ST.pendingGeo.lat.toFixed(6)},${ST.pendingGeo.lng.toFixed(6)}` : null,
+      isTest: !!ST.cfg.testMode
+    };
+    await db.collection(COL_SUB).doc(wk).collection('stores').doc(ST.store.code).set(payload);
+    toast('Submitted! Issue No: '+issueNo,'success');
+    payload.issueNo = issueNo;
+    renderStoreReadOnly(payload);
+  }catch(err){
+    toast('Submit failed: '+err.message,'error');
+    btn.disabled = false; btn.textContent = '✅ Submit';
+  }
+};
+
+function renderStoreReadOnly(sub){
+  let html = `<div class="card is-submitted"><div class="card-head"><h3>✅ Submitted</h3></div><div class="card-body">
+    <div style="font-size:13px;margin-bottom:10px"><b>Issue No:</b> ${sub.issueNo}</div>`;
+  (sub.answers||[]).forEach((a,i)=>{
+    html += `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:12px;color:var(--text2)">Q${i+1}. ${a.text}</div>
+      <span class="badge ${a.status==='C'?'b-green':'b-red'}">${a.status==='C'?'Compliant':'Non-Compliant'}</span>
+      ${a.remarks?`<div style="font-size:12px;margin-top:4px">📝 ${a.remarks}</div>`:''}
+      ${a.photoBase64?`<img src="${a.photoBase64}" style="width:100%;max-height:140px;object-fit:cover;border-radius:6px;margin-top:6px">`:''}
+    </div>`;
+  });
+  html += `</div></div>
+  <button class="btn btn-outline btn-block" onclick="loadStoreHistory()">📜 View Past Weeks</button>
+  <div id="storeHistWrap"></div>
+  <div class="footer-credit">Designed &amp; Developed by Shubhendu Sinha | Vishal Mega Mart Ltd.</div>`;
+  document.getElementById('storeMain').innerHTML = html;
+}
+
+window.loadStoreHistory = async function(){
+  const wrap = document.getElementById('storeHistWrap');
+  wrap.innerHTML = '<p style="text-align:center;color:var(--text2);padding:14px">Loading...</p>';
+  const weeks = [];
+  let d = new Date(ST.currentWeek);
+  for(let i=1;i<=8;i++){ d.setDate(d.getDate()-7); weeks.push(weekKey(d)); }
+  let html = '<div class="card"><div class="card-head"><h3>Submission History</h3></div><div class="card-body">';
+  let any=false;
+  for(const wk of weeks){
+    const sub = await getSubmission(wk, ST.store.code);
+    if(sub){
+      any=true;
+      const ncCount = (sub.answers||[]).filter(a=>a.status==='NC').length;
+      html += `<div class="hist-item" onclick="this.classList.toggle('open')">
+        <div class="hist-h"><span>${fmtDate(wk)} — ${sub.issueNo}</span><span class="chev">▾</span></div>
+        <div class="hist-b">
+          <span class="badge ${ncCount?'b-amber':'b-green'}">${ncCount} Non-Compliant</span>
+        </div></div>`;
+    }
+  }
+  if(!any) html += '<p style="color:var(--text2);text-align:center;padding:10px">No prior submissions found</p>';
+  html += '</div></div>';
+  wrap.innerHTML = html;
+};
+
+/* ============================================================
+   AM FLOW (view-only)
+   ============================================================ */
+async function startAMFlow(){
+  document.getElementById('loginScreen').classList.add('hide');
+  document.getElementById('amApp').classList.remove('hide');
+  document.getElementById('amSub').textContent = ST.am.stores.length+' mapped stores';
+  document.getElementById('amLogout').onclick=()=>location.reload();
+  await renderAMList();
+}
+async function renderAMList(){
+  const wk = ST.currentWeek;
+  const subs = await getWeekSubmissions(wk);
+  const subMap = {}; subs.forEach(s=>subMap[s.storeCode]=s);
+  let html = `<div class="card"><div class="card-head"><h3>Week of ${fmtDate(wk)} — View Only</h3></div><div class="card-body tbl-wrap">
+  <table><thead><tr><th>Store</th><th>Status</th><th>Issue No.</th><th>NC</th><th></th></tr></thead><tbody>`;
+  ST.am.stores.forEach(s=>{
+    const sub = subMap[s.code];
+    const nc = sub ? (sub.answers||[]).filter(a=>a.status==='NC').length : '-';
+    html += `<tr>
+      <td>${s.name} (${s.code})</td>
+      <td>${sub?'<span class="badge b-green">Filled</span>':'<span class="badge b-amber">Pending</span>'}</td>
+      <td>${sub?sub.issueNo:'—'}</td>
+      <td>${nc}</td>
+      <td>${sub?`<button class="btn btn-outline btn-sm" onclick='amViewSub("${s.code}")'>View</button>`:''}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div></div>
+  <div id="amDetailWrap"></div>
+  <div class="footer-credit">Designed &amp; Developed by Shubhendu Sinha | Vishal Mega Mart Ltd.</div>`;
+  document.getElementById('amMain').innerHTML = html;
+}
+window.amViewSub = async function(storeCode){
+  const sub = await getSubmission(ST.currentWeek, storeCode);
+  if(!sub){ toast('Not found','error'); return; }
+  let html = `<div class="card"><div class="card-head"><h3>${sub.storeName} — ${sub.issueNo}</h3></div><div class="card-body">`;
+  (sub.answers||[]).forEach((a,i)=>{
+    html += `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:12px;color:var(--text2)">Q${i+1}. ${a.text}</div>
+      <span class="badge ${a.status==='C'?'b-green':'b-red'}">${a.status==='C'?'Compliant':'Non-Compliant'}</span>
+      ${a.remarks?`<div style="font-size:12px;margin-top:4px">📝 ${a.remarks}</div>`:''}
+      ${a.photoBase64?`<img src="${a.photoBase64}" style="width:100%;max-height:140px;object-fit:cover;border-radius:6px;margin-top:6px;cursor:pointer" onclick='viewPhoto("${a.photoBase64.replace(/"/g,'&quot;')}")'>`:''}
+    </div>`;
+  });
+  html += `</div></div>`;
+  document.getElementById('amDetailWrap').innerHTML = html;
+  document.getElementById('amDetailWrap').scrollIntoView({behavior:'smooth'});
+};
+window.viewPhoto = function(src){
+  document.getElementById('photoOverlayImg').src = src;
+  document.getElementById('photoOverlay').classList.remove('hide');
+};
+document.getElementById('photoClose').onclick = ()=>document.getElementById('photoOverlay').classList.add('hide');
+
+/* ============================================================
+   ADMIN FLOW
+   ============================================================ */
+async function startAdminFlow(){
+  document.getElementById('loginScreen').classList.add('hide');
+  document.getElementById('adminApp').classList.remove('hide');
+  document.getElementById('adminLogout').onclick=()=>location.reload();
+  document.getElementById('testModeToggle').checked = !!ST.cfg.testMode;
+  document.getElementById('gpsRadiusInput').value = ST.cfg.gpsRadius||200;
+
+  document.querySelectorAll('.admin-side .nav-i').forEach(n=>{
+    n.addEventListener('click',()=>{
+      document.querySelectorAll('.admin-side .nav-i').forEach(x=>x.classList.remove('active'));
+      n.classList.add('active');
+      document.querySelectorAll('.admin-page').forEach(p=>p.classList.remove('active'));
+      document.getElementById('page-'+n.dataset.page).classList.add('active');
+      document.getElementById('adminTopTitle').textContent = n.textContent.trim();
+      if(n.dataset.page==='stores') renderStoreTable();
+      if(n.dataset.page==='questions') renderQTable();
+    });
+  });
+
+  populateWeekSelector();
+  await renderDashboard();
+  bindAdminEvents();
+}
+
+function populateWeekSelector(){
+  const sel = document.getElementById('dashWeekSel');
+  sel.innerHTML='';
+  let d = new Date();
+  for(let i=0;i<10;i++){
+    const wk = weekKey(d);
+    const opt = document.createElement('option');
+    opt.value = wk; opt.textContent = 'Week of '+fmtDate(wk);
+    sel.appendChild(opt);
+    d.setDate(d.getDate()-7);
+  }
+  sel.value = ST.currentWeek;
+  sel.onchange = ()=>renderDashboard();
+}
+
+async function renderDashboard(){
+  const wk = document.getElementById('dashWeekSel').value || ST.currentWeek;
+  const subs = (await getWeekSubmissions(wk)).filter(s=>!s.isTest);
+  const total = ST.stores.filter(s=>s.active!==false).length;
+  const submitted = subs.length;
+  const pending = total - submitted;
+  let ncTotal=0, qTotal=0;
+  subs.forEach(s=>(s.answers||[]).forEach(a=>{ qTotal++; if(a.status==='NC') ncTotal++; }));
+  const compliance = qTotal ? Math.round(((qTotal-ncTotal)/qTotal)*100) : 0;
+
+  document.getElementById('kpiTotal').textContent = total;
+  document.getElementById('kpiSub').textContent = submitted;
+  document.getElementById('kpiPend').textContent = pending;
+  document.getElementById('kpiComp').textContent = compliance+'%';
+
+  // ZFM/AM filter population
+  const zfmSel = document.getElementById('dashZfmSel'), amSel = document.getElementById('dashAmSel');
+  const zfms = [...new Set(ST.stores.map(s=>s.zfmEmail).filter(Boolean))];
+  const ams = [...new Set(ST.stores.map(s=>s.amCode).filter(Boolean))];
+  zfmSel.innerHTML = '<option value="">All ZFM</option>'+zfms.map(z=>`<option value="${z}">${z}</option>`).join('');
+  amSel.innerHTML = '<option value="">All AM</option>'+ams.map(a=>`<option value="${a}">${a}</option>`).join('');
+
+  // Question-wise compliance chart
+  const qStats = {};
+  ST.questions.filter(q=>q.active!==false).forEach(q=>qStats[q.id]={text:q.text,c:0,nc:0});
+  subs.forEach(s=>(s.answers||[]).forEach(a=>{
+    if(qStats[a.qid]){ a.status==='C'?qStats[a.qid].c++:qStats[a.qid].nc++; }
+  }));
+  const labels = Object.values(qStats).map((q,i)=>'Q'+(i+1));
+  const cData = Object.values(qStats).map(q=>q.c);
+  const ncData = Object.values(qStats).map(q=>q.nc);
+  if(ST.qChart) ST.qChart.destroy();
+  ST.qChart = new Chart(document.getElementById('qChart'), {
+    type:'bar',
+    data:{ labels, datasets:[
+      {label:'Compliant',data:cData,backgroundColor:'#4CAF50'},
+      {label:'Non-Compliant',data:ncData,backgroundColor:'#F44336'}
+    ]},
+    options:{responsive:true,scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}}}
+  });
+
+  // Store status table
+  const subMap={}; subs.forEach(s=>subMap[s.storeCode]=s);
+  const tbody = document.querySelector('#dashStoreTbl tbody');
+  tbody.innerHTML = ST.stores.filter(s=>s.active!==false).map(s=>{
+    const sub = subMap[s.code];
+    return `<tr>
+      <td>${s.name} (${s.code})</td><td>${s.zfmEmail||'-'}</td><td>${s.amCode||'-'}</td>
+      <td>${sub?'<span class="badge b-green">Filled</span>':'<span class="badge b-amber">Pending</span>'}</td>
+      <td>${sub?sub.issueNo:'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('dashZfmSel').addEventListener('change',filterDashboardTable);
+document.getElementById('dashAmSel').addEventListener('change',filterDashboardTable);
+function filterDashboardTable(){
+  const zfm = document.getElementById('dashZfmSel').value;
+  const am = document.getElementById('dashAmSel').value;
+  document.querySelectorAll('#dashStoreTbl tbody tr').forEach(tr=>{
+    // simple text-based filter fallback (re-render is cheap enough; left minimal for now)
+  });
+  renderDashboard();
+}
+
+/* ---- Store Master ---- */
+function renderStoreTable(){
+  const tbody = document.querySelector('#storeTbl tbody');
+  const q = (document.getElementById('storeSearch').value||'').toLowerCase();
+  tbody.innerHTML = ST.stores.filter(s=>!q || s.code.toLowerCase().includes(q) || (s.name||'').toLowerCase().includes(q)).map(s=>`
+    <tr>
+      <td>${s.code}</td><td>${s.name}</td><td>${s.smEmail||'-'}</td><td>${s.amCode||'-'}</td><td>${s.amEmail||'-'}</td><td>${s.zfmEmail||'-'}</td>
+      <td><input type="checkbox" ${s.active!==false?'checked':''} onchange='toggleStoreActive("${s.id}",this.checked)'></td>
+      <td><button class="btn btn-outline btn-sm" onclick='editStore("${s.id}")'>Edit</button></td>
+    </tr>`).join('');
+}
+document.getElementById('storeSearch').addEventListener('input',renderStoreTable);
+window.toggleStoreActive = async function(id,val){
+  await db.collection(COL_STORES).doc(id).update({active:val});
+  await loadStores(); renderStoreTable();
+  toast('Store updated','success');
+};
+let editingStoreId = null;
+window.editStore = function(id){
+  editingStoreId = id;
+  const s = ST.stores.find(x=>x.id===id);
+  document.getElementById('storeFormTitle').textContent='Edit Store';
+  document.getElementById('sfCode').value=s.code; document.getElementById('sfName').value=s.name;
+  document.getElementById('sfLat').value=s.lat||''; document.getElementById('sfLng').value=s.lng||'';
+  document.getElementById('sfSmEmail').value=s.smEmail||''; document.getElementById('sfAmCode').value=s.amCode||'';
+  document.getElementById('sfAmEmail').value=s.amEmail||''; document.getElementById('sfZfmEmail').value=s.zfmEmail||'';
+  document.getElementById('storeFormModal').classList.remove('hide');
+};
+document.getElementById('btnAddStore').onclick = ()=>{
+  editingStoreId = null;
+  document.getElementById('storeFormTitle').textContent='Add Store';
+  ['sfCode','sfName','sfLat','sfLng','sfSmEmail','sfAmCode','sfAmEmail','sfZfmEmail'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('storeFormModal').classList.remove('hide');
+};
+document.getElementById('sfFormCancel').onclick = ()=>document.getElementById('storeFormModal').classList.add('hide');
+document.getElementById('sfFormSave').onclick = async ()=>{
+  const data = {
+    code: document.getElementById('sfCode').value.trim().toUpperCase(),
+    name: document.getElementById('sfName').value.trim(),
+    lat: parseFloat(document.getElementById('sfLat').value)||0,
+    lng: parseFloat(document.getElementById('sfLng').value)||0,
+    smEmail: document.getElementById('sfSmEmail').value.trim(),
+    amCode: document.getElementById('sfAmCode').value.trim(),
+    amEmail: document.getElementById('sfAmEmail').value.trim(),
+    zfmEmail: document.getElementById('sfZfmEmail').value.trim(),
+    active: true
+  };
+  if(!data.code || !data.name){ toast('Code and Name required','error'); return; }
+  if(editingStoreId) await db.collection(COL_STORES).doc(editingStoreId).update(data);
+  else await db.collection(COL_STORES).add(data);
+  document.getElementById('storeFormModal').classList.add('hide');
+  await loadStores(); renderStoreTable();
+  toast('Store saved','success');
+};
+document.getElementById('btnExportStoresCsv').onclick = ()=>{
+  const rows = [['Code','Name','Lat','Lng','SM Email','AM Code','AM Email','ZFM Email','Active']];
+  ST.stores.forEach(s=>rows.push([s.code,s.name,s.lat,s.lng,s.smEmail,s.amCode,s.amEmail,s.zfmEmail,s.active!==false]));
+  downloadCsv(rows,'StoreMaster.csv');
+};
+document.getElementById('btnImportCsv').onclick = ()=>document.getElementById('csvFileInput').click();
+document.getElementById('csvFileInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const text = await file.text();
+  const lines = text.split('\n').filter(l=>l.trim());
+  let added=0, updated=0;
+  for(let i=1;i<lines.length;i++){
+    const cols = lines[i].split(',').map(c=>c.trim());
+    if(cols.length<2) continue;
+    const [code,name,lat,lng,smEmail,amCode,amEmail,zfmEmail] = cols;
+    const existing = ST.stores.find(s=>s.code===code.toUpperCase());
+    const data = {code:code.toUpperCase(),name,lat:parseFloat(lat)||0,lng:parseFloat(lng)||0,smEmail,amCode,amEmail,zfmEmail,active:true};
+    if(existing){ await db.collection(COL_STORES).doc(existing.id).update(data); updated++; }
+    else { await db.collection(COL_STORES).add(data); added++; }
+  }
+  await loadStores(); renderStoreTable();
+  toast(`Import done: ${added} added, ${updated} updated`,'success');
+});
+function downloadCsv(rows,filename){
+  const csv = rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+}
+
+/* ---- Questions ---- */
+function renderQTable(){
+  const tbody = document.querySelector('#qTbl tbody');
+  tbody.innerHTML = ST.questions.map((q,i)=>`
+    <tr>
+      <td>${i+1}</td><td>${q.text}</td>
+      <td><input type="checkbox" ${q.requirePhoto?'checked':''} onchange='toggleQField("${q.id}","requirePhoto",this.checked)'></td>
+      <td><input type="checkbox" ${q.active!==false?'checked':''} onchange='toggleQField("${q.id}","active",this.checked)'></td>
+      <td><button class="btn btn-outline btn-sm" onclick='editQ("${q.id}")'>Edit</button></td>
+    </tr>`).join('');
+}
+window.toggleQField = async function(id,field,val){
+  await db.collection(COL_Q).doc(id).update({[field]:val});
+  await loadQuestions(); renderQTable();
+  toast('Question updated','success');
+};
+let editingQId = null;
+window.editQ = function(id){
+  editingQId = id;
+  const q = ST.questions.find(x=>x.id===id);
+  document.getElementById('qfText').value = q.text;
+  document.getElementById('qfPhotoReq').checked = !!q.requirePhoto;
+  document.getElementById('qFormModal').classList.remove('hide');
+};
+document.getElementById('btnAddQ').onclick = ()=>{
+  editingQId = null;
+  document.getElementById('qfText').value=''; document.getElementById('qfPhotoReq').checked=false;
+  document.getElementById('qFormModal').classList.remove('hide');
+};
+document.getElementById('qfCancel').onclick = ()=>document.getElementById('qFormModal').classList.add('hide');
+document.getElementById('qfSave').onclick = async ()=>{
+  const text = document.getElementById('qfText').value.trim();
+  const requirePhoto = document.getElementById('qfPhotoReq').checked;
+  if(!text){ toast('Question text required','error'); return; }
+  if(editingQId) await db.collection(COL_Q).doc(editingQId).update({text,requirePhoto});
+  else await db.collection(COL_Q).add({text,requirePhoto,active:true,order:ST.questions.length});
+  document.getElementById('qFormModal').classList.add('hide');
+  await loadQuestions(); renderQTable();
+  toast('Question saved','success');
+};
+
+/* ---- Submissions Log ---- */
+document.getElementById('logWeekPick').addEventListener('change',renderLog);
+document.getElementById('logSearch').addEventListener('input',renderLog);
+async function renderLog(){
+  const wkVal = document.getElementById('logWeekPick').value;
+  const wk = wkVal ? weekInputToKey(wkVal) : ST.currentWeek;
+  const q = (document.getElementById('logSearch').value||'').toLowerCase();
+  const subs = await getWeekSubmissions(wk);
+  const tbody = document.querySelector('#logTbl tbody');
+  tbody.innerHTML = subs.filter(s=>!q || s.storeCode.toLowerCase().includes(q) || (s.storeName||'').toLowerCase().includes(q)).map(s=>{
+    const nc = (s.answers||[]).filter(a=>a.status==='NC').length;
+    const ts = s.submittedAt && s.submittedAt.toDate ? s.submittedAt.toDate().toLocaleString('en-IN') : '-';
+    return `<tr>
+      <td>${s.storeName} (${s.storeCode})</td><td>${s.issueNo}</td><td>${s.submittedBy}</td><td>${ts}</td>
+      <td><span class="badge ${nc?'b-amber':'b-green'}">${nc}</span></td>
+      <td><button class="btn btn-outline btn-sm" onclick='amViewSub("${s.storeCode}")'>View</button></td>
+    </tr>`;
+  }).join('');
+  // reuse amDetailWrap-like inline view inside admin log page
+  if(!document.getElementById('amDetailWrap')){
+    const div=document.createElement('div'); div.id='amDetailWrap'; document.getElementById('page-log').appendChild(div);
+  }
+}
+renderLog();
+
+/* ---- Export ---- */
+document.getElementById('btnExportXlsx').onclick = async ()=>{
+  const wkVal = document.getElementById('exportWeekPick').value;
+  const wk = wkVal ? weekInputToKey(wkVal) : ST.currentWeek;
+  const subs = await getWeekSubmissions(wk);
+  if(!subs.length){ toast('No submissions for selected week','error'); return; }
+  const summary = subs.map(s=>({
+    StoreCode:s.storeCode, StoreName:s.storeName, IssueNo:s.issueNo,
+    NonCompliantCount:(s.answers||[]).filter(a=>a.status==='NC').length,
+    SubmittedBy:s.submittedBy, GPS:s.gps||''
+  }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), 'Summary');
+  ST.questions.forEach((q,i)=>{
+    const rows = subs.map(s=>{
+      const a = (s.answers||[]).find(x=>x.qid===q.id) || {};
+      return {StoreCode:s.storeCode, StoreName:s.storeName, Status:a.status||'', Remarks:a.remarks||''};
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), ('Q'+(i+1)).slice(0,31));
+  });
+  XLSX.writeFile(wb, `WSC_${wk}.xlsx`);
+};
+document.getElementById('btnExportCsvLog').onclick = async ()=>{
+  const wkVal = document.getElementById('exportWeekPick').value;
+  const wk = wkVal ? weekInputToKey(wkVal) : ST.currentWeek;
+  const subs = await getWeekSubmissions(wk);
+  const rows=[['StoreCode','StoreName','IssueNo','NonCompliantCount','SubmittedBy']];
+  subs.forEach(s=>rows.push([s.storeCode,s.storeName,s.issueNo,(s.answers||[]).filter(a=>a.status==='NC').length,s.submittedBy]));
+  downloadCsv(rows, `WSC_${wk}.csv`);
+};
+
+/* ---- Settings ---- */
+document.getElementById('btnSaveSettings').onclick = async ()=>{
+  ST.cfg.testMode = document.getElementById('testModeToggle').checked;
+  ST.cfg.gpsRadius = parseInt(document.getElementById('gpsRadiusInput').value)||200;
+  await saveConfig();
+  toast('Settings saved','success');
+};
+
+function bindAdminEvents(){ /* placeholder for future wiring */ }
+
+</script>
+</body>
+</html>
